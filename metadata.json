@@ -1,0 +1,6 @@
+{
+  "name": "MINI-B — Marketplace Express Bénin",
+  "description": "La marketplace express N°1 au Bénin : électronique, mode Wax, beauté et livraison 2h à Cotonou & Calavi avec paiement Mobile Money.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
