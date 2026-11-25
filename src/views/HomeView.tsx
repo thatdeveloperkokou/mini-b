@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Flame,
@@ -11,6 +12,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Store,
+  Tag,
   Truck,
   Wallet,
   Wifi,
@@ -66,6 +68,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const isOnline = useOnlineStatus();
   const [heroSlide, setHeroSlide] = useState(0);
   const [flashSeconds, setFlashSeconds] = useState(2 * 3600 + 45 * 60 + 18);
+  const flashDealsSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -78,58 +81,109 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const mins = String(Math.floor((flashSeconds % 3600) / 60)).padStart(2, '0');
   const secs = String(flashSeconds % 60).padStart(2, '0');
 
-  const heroSlides = [
-    {
-      kickerFr: 'SMARTPHONES 5G & IPHONE',
-      kickerEn: 'FLAGSHIP PHONES & 5G',
-      titleFr: 'iPhone 15 Pro Max, Galaxy S24 Ultra & Pixel 8',
-      titleEn: 'iPhone 15 Pro Max, Galaxy S24 & Pixel 8',
-      subFr: 'Téléphones neufs débloqués avec garantie Bénin livrés en 2h',
-      subEn: 'Factory-unlocked flagships with Benin warranty delivered in 2h',
-      ctaFr: 'Voir Téléphones',
-      ctaEn: 'Shop Phones',
-      image: IMAGES.realPhoneIphone15ProMax,
-      targetCategory: 'phones' as CategoryId,
-    },
-    {
-      kickerFr: 'ORDINATEURS & MACBOOK',
-      kickerEn: 'LAPTOPS & WORKSTATIONS',
-      titleFr: "Jusqu'à -15% sur MacBook, Dell XPS & ThinkPad",
-      titleEn: 'Pro Laptops: MacBook, Dell XPS & ThinkPad',
-      subFr: 'MacBook M2 Max, ASUS ROG, HP Envy & Surface livrés à Cotonou',
-      subEn: 'MacBook M2 Max, ASUS ROG, HP Envy & Surface delivered across Cotonou',
-      ctaFr: 'Voir Ordinateurs',
-      ctaEn: 'Shop Laptops',
-      image: IMAGES.realLaptopMacbookPro16,
-      targetCategory: 'tech' as CategoryId,
-    },
-    {
-      kickerFr: 'MODE & PRÊT-À-PORTER COTONOU',
-      kickerEn: 'COTONOU CLOTHING & APPAREL',
-      titleFr: 'Vêtements & Coupes Contemporaines',
-      titleEn: 'Everyday Clothing & Tailored Apparel',
-      subFr: 'T-shirts coton peigné, blazers, robes, jeans & mailles livrés en 2h',
-      subEn: 'Combed cotton tees, blazers, dresses, denim & knits delivered in 2h',
-      ctaFr: 'Voir Vêtements',
-      ctaEn: 'Shop Clothing',
-      image: IMAGES.realStoreClothingBanner,
-      targetCategory: 'clothing' as CategoryId,
-    },
-    {
-      kickerFr: 'SOULIERS, BASKETS & BIJOUX',
-      kickerEn: 'SHOES & FINE JEWELRY',
-      titleFr: 'Chaussures Cuir & Joaillerie Or 18K',
-      titleEn: 'Leather Footwear & 18K Gold Jewelry',
-      subFr: 'Baskets urbaines, escarpins, colliers perles & montres squelettes',
-      subEn: 'Street sneakers, heels, pearl strands & automatic skeleton watches',
-      ctaFr: 'Explorer Chaussures',
-      ctaEn: 'Shop Shoes',
-      image: IMAGES.realShoesHightopSneakers,
-      targetCategory: 'shoes' as CategoryId,
-    },
-  ];
+  type HeroSlide =
+    | {
+        kind: 'promo';
+        id: string;
+        kickerFr: string;
+        kickerEn: string;
+        titleFr: string;
+        titleEn: string;
+        subFr: string;
+        subEn: string;
+        ctaFr: string;
+        ctaEn: string;
+        image: string;
+        badgeFr?: string;
+        badgeEn?: string;
+        onAction: () => void;
+      }
+    | {
+        kind: 'product';
+        id: string;
+        product: Product;
+      };
 
-  const activeSlide = heroSlides[heroSlide];
+  const heroSlides = useMemo<HeroSlide[]>(() => {
+    const promoSlides: HeroSlide[] = [
+      {
+        kind: 'promo',
+        id: 'promo-cotonou2024',
+        kickerFr: 'PROMO EN COURS · CODE COTONOU2024',
+        kickerEn: 'LIVE PROMO · CODE COTONOU2024',
+        titleFr: '-15.000 FCFA dès 200.000 FCFA d’achat',
+        titleEn: '15.000 FCFA Off Orders Over 200.000 FCFA',
+        subFr:
+          'Code COTONOU2024 actif au panier (ou MINIB5 pour -5%) · Paiement MoMo, Wave & Crypto',
+        subEn:
+          'Use code COTONOU2024 at checkout (or MINIB5 for 5% off) · Pay via MoMo, Wave & Crypto',
+        ctaFr: 'Profiter de la promo',
+        ctaEn: 'Shop Promo Now',
+        image: IMAGES.courierBanner,
+        badgeFr: '-15.000 FCFA',
+        badgeEn: '-15.000 FCFA',
+        onAction: () => {
+          onSelectCategory('all');
+          onOpenCategories();
+        },
+      },
+      {
+        kind: 'promo',
+        id: 'promo-flash-cashback',
+        kickerFr: 'VENTES FLASH + 3% CASHBACK CLUB',
+        kickerEn: 'FLASH DEALS + 3% CLUB CASHBACK',
+        titleFr: "Jusqu'à -25% en Ventes Flash + 3% offerts",
+        titleEn: 'Up to 25% Off Flash Deals + 3% Cashback',
+        subFr:
+          '3% remboursés automatiquement sur votre portefeuille MINI-B à chaque commande livrée en 2h',
+        subEn:
+          'Earn instant 3% MINI-B wallet cashback on every order with 2h express Cotonou delivery',
+        ctaFr: 'Voir les Ventes Flash',
+        ctaEn: 'See Flash Deals',
+        image: IMAGES.heroElectronics,
+        badgeFr: 'JUSQU’À -25%',
+        badgeEn: 'UP TO -25%',
+        onAction: () => {
+          flashDealsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        },
+      },
+    ];
+
+    const featuredIds = [
+      'iphone-15-pro-max-256',
+      'ensemble-cabas-rose-poudre-pochette',
+      'macbook-pro-16-m2max',
+      'palette-fards-nude-rose-gold',
+      'batterie-externe-anker-20000',
+    ];
+
+    const productSlides: HeroSlide[] = featuredIds
+      .map((pid) => products.find((p) => p.id === pid))
+      .filter((p): p is Product => Boolean(p))
+      .map((product) => ({
+        kind: 'product',
+        id: `prod-${product.id}`,
+        product,
+      }));
+
+    return [...promoSlides, ...productSlides];
+  }, [products, onSelectCategory, onOpenCategories]);
+
+  useEffect(() => {
+    if (heroSlide >= heroSlides.length) {
+      setHeroSlide(0);
+    }
+  }, [heroSlide, heroSlides.length]);
+
+  useEffect(() => {
+    if (heroSlides.length <= 1) return;
+    const autoTimer = window.setInterval(() => {
+      setHeroSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5500);
+    return () => window.clearInterval(autoTimer);
+  }, [heroSlides.length, heroSlide]);
+
+  const activeSlide = heroSlides[heroSlide] || heroSlides[0];
 
   const randomWeightsRef = useRef<Record<string, number>>({});
   const getOrderWeight = (id: string) => {
@@ -289,60 +343,169 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Row 3: Electric Violet-Indigo Hero Promo Carousel (#5C2DF2 -> #421AD6) */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5E30F5] via-[#4F28E8] to-[#3B19C8] p-5 text-white shadow-sm sm:p-8 lg:p-10">
-        <div className="grid grid-cols-12 items-center gap-4 sm:gap-8">
-          <div className="col-span-7 sm:col-span-7 space-y-2.5 sm:space-y-4">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wide text-white">
-              <Zap className="h-3 w-3 shrink-0" />
-              <span>{lang === 'fr' ? activeSlide.kickerFr : activeSlide.kickerEn}</span>
+        {activeSlide.kind === 'promo' ? (
+          <div className="grid grid-cols-12 items-center gap-4 sm:gap-8">
+            <div className="col-span-7 sm:col-span-7 space-y-2.5 sm:space-y-4">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wide text-white">
+                <Zap className="h-3 w-3 shrink-0" />
+                <span>{lang === 'fr' ? activeSlide.kickerFr : activeSlide.kickerEn}</span>
+              </div>
+
+              <h1 className="font-display text-xl font-extrabold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl">
+                {lang === 'fr' ? activeSlide.titleFr : activeSlide.titleEn}
+              </h1>
+
+              <p className="max-w-md text-xs leading-relaxed text-indigo-100 sm:text-sm line-clamp-2">
+                {lang === 'fr' ? activeSlide.subFr : activeSlide.subEn}
+              </p>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={activeSlide.onAction}
+                  className="inline-flex min-h-[40px] sm:min-h-[44px] items-center gap-2 rounded-full bg-white px-4 sm:px-6 py-2 text-xs sm:text-sm font-bold text-[#4F28E8] transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                >
+                  <span>{lang === 'fr' ? activeSlide.ctaFr : activeSlide.ctaEn}</span>
+                  <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+              </div>
             </div>
 
-            <h1 className="font-display text-xl font-extrabold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl">
-              {lang === 'fr' ? activeSlide.titleFr : activeSlide.titleEn}
-            </h1>
-
-            <p className="max-w-md text-xs leading-relaxed text-indigo-100 sm:text-sm line-clamp-2">
-              {lang === 'fr' ? activeSlide.subFr : activeSlide.subEn}
-            </p>
-
-            <div className="pt-1">
+            <div className="col-span-5 sm:col-span-5">
               <button
                 type="button"
-                onClick={() => {
-                  onSelectCategory(activeSlide.targetCategory);
-                  onOpenCategories();
-                }}
-                className="inline-flex min-h-[40px] sm:min-h-[44px] items-center gap-2 rounded-full bg-white px-4 sm:px-6 py-2 text-xs sm:text-sm font-bold text-[#4F28E8] transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                onClick={activeSlide.onAction}
+                className="relative block w-full aspect-[4/3] overflow-hidden rounded-2xl bg-slate-950/25 shadow-lg ring-1 ring-white/15 cursor-pointer"
               >
-                <span>{lang === 'fr' ? activeSlide.ctaFr : activeSlide.ctaEn}</span>
-                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <ProductImage
+                  src={activeSlide.image}
+                  alt={lang === 'fr' ? activeSlide.titleFr : activeSlide.titleEn}
+                  className="h-full w-full object-cover"
+                />
+                {activeSlide.badgeFr && (
+                  <span className="absolute top-2.5 left-2.5 rounded-lg bg-amber-400 px-2.5 py-1 font-mono text-[10px] sm:text-xs font-extrabold text-slate-950 shadow-xs">
+                    {lang === 'fr' ? activeSlide.badgeFr : activeSlide.badgeEn}
+                  </span>
+                )}
               </button>
             </div>
           </div>
+        ) : (
+          <div className="grid grid-cols-12 items-center gap-4 sm:gap-8">
+            <div className="col-span-7 sm:col-span-7 space-y-2.5 sm:space-y-4">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wide text-white">
+                <Tag className="h-3 w-3 shrink-0" />
+                <span>
+                  {lang === 'fr'
+                    ? `NOS PRODUITS · ${activeSlide.product.categoryLabelFr.toUpperCase()}`
+                    : `FEATURED ITEM · ${activeSlide.product.categoryLabelEn.toUpperCase()}`}
+                </span>
+              </div>
 
-          <div className="col-span-5 sm:col-span-5">
-            <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-slate-950/25 shadow-lg ring-1 ring-white/15">
-              <ProductImage
-                src={activeSlide.image}
-                alt={lang === 'fr' ? activeSlide.titleFr : activeSlide.titleEn}
-                className="h-full w-full object-cover"
-              />
+              <h1 className="font-display text-lg font-extrabold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl line-clamp-2">
+                {lang === 'fr' ? activeSlide.product.name : activeSlide.product.nameEn}
+              </h1>
+
+              <div className="flex flex-wrap items-baseline gap-2.5">
+                <span className="font-mono text-lg sm:text-2xl font-extrabold text-white tabular-nums">
+                  {formatFCFA(activeSlide.product.price)}
+                </span>
+                {activeSlide.product.originalPrice && (
+                  <span className="font-mono text-xs sm:text-sm text-indigo-200 line-through tabular-nums">
+                    {formatFCFA(activeSlide.product.originalPrice)}
+                  </span>
+                )}
+                <span className="hidden sm:inline text-xs font-medium text-indigo-100">
+                  ·{' '}
+                  {lang === 'fr'
+                    ? activeSlide.product.deliveryEtaFr
+                    : activeSlide.product.deliveryEtaEn}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => onOpenProduct(activeSlide.product.id)}
+                  className="inline-flex min-h-[40px] sm:min-h-[44px] items-center gap-2 rounded-full bg-white px-4 sm:px-6 py-2 text-xs sm:text-sm font-bold text-[#4F28E8] transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                >
+                  <span>{lang === 'fr' ? 'Voir le produit' : 'View Product'}</span>
+                  <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onQuickAdd(activeSlide.product)}
+                  className="hidden sm:inline-flex min-h-[44px] items-center rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-white/20 cursor-pointer"
+                >
+                  + {lang === 'fr' ? 'Panier' : 'Add to Cart'}
+                </button>
+              </div>
+            </div>
+
+            <div className="col-span-5 sm:col-span-5">
+              <button
+                type="button"
+                onClick={() => onOpenProduct(activeSlide.product.id)}
+                className="relative block w-full aspect-[4/3] overflow-hidden rounded-2xl bg-slate-950/25 shadow-lg ring-1 ring-white/15 cursor-pointer"
+              >
+                <ProductImage
+                  src={activeSlide.product.image}
+                  alt={lang === 'fr' ? activeSlide.product.name : activeSlide.product.nameEn}
+                  className="h-full w-full object-cover"
+                />
+                {activeSlide.product.highlightTag && (
+                  <span className="absolute top-2.5 left-2.5 rounded-lg bg-white/95 px-2.5 py-1 font-mono text-[10px] sm:text-xs font-extrabold text-[#4F28E8] shadow-xs">
+                    {activeSlide.product.highlightTag}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Carousel Dots */}
-        <div className="mt-5 flex items-center justify-center gap-2">
-          {heroSlides.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              aria-label={`Slide ${idx + 1}`}
-              onClick={() => setHeroSlide(idx)}
-              className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                heroSlide === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/45 hover:bg-white/75'
-              }`}
-            />
-          ))}
+        {/* Carousel Navigation & Dots */}
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            aria-label={lang === 'fr' ? 'Slide précédent' : 'Previous slide'}
+            onClick={() =>
+              setHeroSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)
+            }
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25 cursor-pointer"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          <div className="flex items-center gap-2">
+            {heroSlides.map((slide, idx) => (
+              <button
+                key={slide.id}
+                type="button"
+                aria-label={
+                  slide.kind === 'promo'
+                    ? lang === 'fr'
+                      ? slide.kickerFr
+                      : slide.kickerEn
+                    : lang === 'fr'
+                    ? slide.product.name
+                    : slide.product.nameEn
+                }
+                onClick={() => setHeroSlide(idx)}
+                className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                  heroSlide === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/45 hover:bg-white/75'
+                }`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            aria-label={lang === 'fr' ? 'Slide suivant' : 'Next slide'}
+            onClick={() => setHeroSlide((prev) => (prev + 1) % heroSlides.length)}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25 cursor-pointer"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       </section>
 
@@ -431,7 +594,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </section>
 
       {/* Row 6: Ventes Flash with Countdown Timer */}
-      <section className="space-y-3.5">
+      <section ref={flashDealsSectionRef} className="space-y-3.5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-rose-500 shrink-0" />

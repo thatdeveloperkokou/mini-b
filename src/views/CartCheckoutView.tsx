@@ -117,7 +117,7 @@ export const CartCheckoutView: React.FC<CartCheckoutViewProps> = ({
   const deliveryFee = subtotal > 0 ? 1500 : 0;
 
   let discount = 0;
-  if (appliedPromo === 'COTONOU2024' && subtotal > 20000) {
+  if (appliedPromo === 'COTONOU2024' && subtotal >= 200000) {
     discount = 15000;
   } else if (appliedPromo === 'MINIB5' && subtotal > 0) {
     discount = Math.round(subtotal * 0.05);
@@ -136,9 +136,17 @@ export const CartCheckoutView: React.FC<CartCheckoutViewProps> = ({
     const code = promoInput.trim().toUpperCase();
     if (code === 'COTONOU2024' || code === 'MINIB5') {
       setAppliedPromo(code);
-      setPromoFeedback(
-        lang === 'fr' ? `Code ${code} appliqué avec succès.` : `Promo ${code} applied.`
-      );
+      if (code === 'COTONOU2024' && subtotal < 200000) {
+        setPromoFeedback(
+          lang === 'fr'
+            ? `Code COTONOU2024 enregistré · Valable dès 200.000 FCFA d'achat (-15.000 FCFA).`
+            : `Code COTONOU2024 saved · Applies to orders over 200.000 FCFA (15.000 FCFA off).`
+        );
+      } else {
+        setPromoFeedback(
+          lang === 'fr' ? `Code ${code} appliqué avec succès.` : `Promo ${code} applied.`
+        );
+      }
     } else {
       setPromoFeedback(
         lang === 'fr'
