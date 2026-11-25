@@ -48,18 +48,13 @@ export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('home');
   const [accountSection, setAccountSection] = useState<AccountSection>('overview');
 
-  const [products, setProducts] = useState<Product[]>(() => loadState('minib_products', PRODUCTS));
+  const [products, setProducts] = useState<Product[]>(() => loadState('minib_products_v7', PRODUCTS));
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeProductId, setActiveProductId] = useState<string>(PRODUCTS[0].id);
   const [activeVendorId, setActiveVendorId] = useState<string>('benin_hightech');
 
-  const [cart, setCart] = useState<CartItem[]>(() =>
-    loadState('minib_cart', [
-      { productId: 'dell-xps-13', variantId: '512gb', color: 'Gris Sidéral', quantity: 1 },
-      { productId: 'sac-antichoc-pro', variantId: '15-inch', color: 'Noir Mat', quantity: 1 },
-    ])
-  );
+  const [cart, setCart] = useState<CartItem[]>(() => loadState('minib_cart_v2', []));
   const [wishlist, setWishlist] = useState<string[]>(() =>
     loadState('minib_wishlist', ['dell-xps-13', 'pagne-wax-vlisco', 'montre-sport-cardio'])
   );
@@ -83,10 +78,10 @@ export default function App() {
     localStorage.setItem('minib_lang', JSON.stringify(lang));
   }, [lang]);
   useEffect(() => {
-    localStorage.setItem('minib_products', JSON.stringify(products));
+    localStorage.setItem('minib_products_v7', JSON.stringify(products));
   }, [products]);
   useEffect(() => {
-    localStorage.setItem('minib_cart', JSON.stringify(cart));
+    localStorage.setItem('minib_cart_v2', JSON.stringify(cart));
   }, [cart]);
   useEffect(() => {
     localStorage.setItem('minib_wishlist', JSON.stringify(wishlist));
@@ -380,6 +375,7 @@ export default function App() {
             products={products}
             wishlist={wishlist}
             onBack={() => navigate('home')}
+            onSelectVendor={(vid) => setActiveVendorId(vid)}
             onToggleWishlist={handleToggleWishlist}
             onOpenProduct={(id) => {
               setActiveProductId(id);

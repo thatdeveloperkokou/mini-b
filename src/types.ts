@@ -13,7 +13,15 @@ export type AppView =
 
 export type AccountSection = 'overview' | 'wallet' | 'addresses' | 'support';
 
-export type CategoryId = 'all' | 'phones' | 'tech' | 'fashion' | 'beauty' | 'accessories';
+export type CategoryId =
+  | 'all'
+  | 'clothing'
+  | 'shoes'
+  | 'jewelry'
+  | 'beauty'
+  | 'phones'
+  | 'tech'
+  | 'accessories';
 
 export type PaymentMethodId =
   | 'mtn_momo'
@@ -81,6 +89,8 @@ export interface Product {
 export interface Vendor {
   id: string;
   name: string;
+  specialtyFr?: string;
+  specialtyEn?: string;
   district: string;
   address: string;
   satisfaction: string;

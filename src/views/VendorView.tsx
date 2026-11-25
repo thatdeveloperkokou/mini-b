@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, MapPin, MessageCircle, Phone, ShieldCheck } from 'lucide-react';
 import { Language, Product, Vendor } from '../types';
+import { VENDORS } from '../data/storeData';
 import { ProductCard } from '../components/ProductCard';
 import { ProductImage } from '../components/ProductImage';
 
@@ -10,6 +11,7 @@ interface VendorViewProps {
   products: Product[];
   wishlist: string[];
   onBack: () => void;
+  onSelectVendor: (vendorId: string) => void;
   onToggleWishlist: (id: string) => void;
   onOpenProduct: (id: string) => void;
   onQuickAdd: (product: Product) => void;
@@ -22,23 +24,47 @@ export const VendorView: React.FC<VendorViewProps> = ({
   products,
   wishlist,
   onBack,
+  onSelectVendor,
   onToggleWishlist,
   onOpenProduct,
   onQuickAdd,
   onOpenSupport,
 }) => {
   const vendorProducts = products.filter((p) => p.vendorId === vendor.id);
+  const allVendors = Object.values(VENDORS);
 
   return (
     <div className="space-y-8 pb-8">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex min-h-[40px] items-center gap-2 text-sm font-semibold text-slate-700 hover:text-[#4F28E8] cursor-pointer"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        <span>{lang === 'fr' ? 'Retour' : 'Back'}</span>
-      </button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex min-h-[40px] items-center gap-2 text-sm font-semibold text-slate-700 hover:text-[#4F28E8] cursor-pointer self-start"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>{lang === 'fr' ? 'Retour' : 'Back'}</span>
+        </button>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {allVendors.map((v) => {
+            const active = v.id === vendor.id;
+            return (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => onSelectVendor(v.id)}
+                className={`min-h-[36px] shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
+                  active
+                    ? 'bg-[#4F28E8] text-white'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:border-[#4F28E8]/40 hover:text-[#4F28E8]'
+                }`}
+              >
+                {v.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Merchant Profile Card */}
       <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white">

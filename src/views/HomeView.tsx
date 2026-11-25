@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   ChevronDown,
@@ -10,13 +10,14 @@ import {
   Search,
   ShieldCheck,
   SlidersHorizontal,
+  Store,
   Truck,
   Wallet,
   Wifi,
   WifiOff,
   Zap,
 } from 'lucide-react';
-import { CATEGORIES, formatFCFA, IMAGES } from '../data/storeData';
+import { CATEGORIES, formatFCFA, IMAGES, VENDORS } from '../data/storeData';
 import { BeninAddress, CategoryId, Language, Product } from '../types';
 import { ProductCard } from '../components/ProductCard';
 import { ProductImage } from '../components/ProductImage';
@@ -59,6 +60,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onQuickAdd,
   onOpenCategories,
   onOpenAddresses,
+  onOpenVendor,
   onTrackOrder,
 }) => {
   const isOnline = useOnlineStatus();
@@ -78,58 +80,121 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   const heroSlides = [
     {
-      kickerFr: 'SUPER PROMO COTONOU',
-      kickerEn: 'COTONOU SUPER DEALS',
-      titleFr: "Jusqu'à -40% sur l'Électronique",
-      titleEn: 'Up to 40% Off Electronics',
-      subFr: 'Laptops pro & smartphones livrés en 2h à Cotonou',
-      subEn: 'Pro laptops & smartphones delivered in 2h across Cotonou',
-      ctaFr: 'Acheter',
-      ctaEn: 'Shop Now',
-      image: IMAGES.heroElectronics,
+      kickerFr: 'SMARTPHONES 5G & IPHONE',
+      kickerEn: 'FLAGSHIP PHONES & 5G',
+      titleFr: 'iPhone 15 Pro Max, Galaxy S24 Ultra & Pixel 8',
+      titleEn: 'iPhone 15 Pro Max, Galaxy S24 & Pixel 8',
+      subFr: 'Téléphones neufs débloqués avec garantie Bénin livrés en 2h',
+      subEn: 'Factory-unlocked flagships with Benin warranty delivered in 2h',
+      ctaFr: 'Voir Téléphones',
+      ctaEn: 'Shop Phones',
+      image: IMAGES.realPhoneIphone15ProMax,
+      targetCategory: 'phones' as CategoryId,
+    },
+    {
+      kickerFr: 'ORDINATEURS & MACBOOK',
+      kickerEn: 'LAPTOPS & WORKSTATIONS',
+      titleFr: "Jusqu'à -15% sur MacBook, Dell XPS & ThinkPad",
+      titleEn: 'Pro Laptops: MacBook, Dell XPS & ThinkPad',
+      subFr: 'MacBook M2 Max, ASUS ROG, HP Envy & Surface livrés à Cotonou',
+      subEn: 'MacBook M2 Max, ASUS ROG, HP Envy & Surface delivered across Cotonou',
+      ctaFr: 'Voir Ordinateurs',
+      ctaEn: 'Shop Laptops',
+      image: IMAGES.realLaptopMacbookPro16,
       targetCategory: 'tech' as CategoryId,
     },
     {
-      kickerFr: 'CRÉATEURS & WAX BÉNIN',
-      kickerEn: 'BENIN FASHION & WAX',
-      titleFr: 'Pagnes Vlisco & Mode sur Mesure',
-      titleEn: 'Authentic Vlisco Wax & Tailoring',
-      subFr: 'Pièces certifiées Dantokpa · Paiement MTN MoMo & Wave',
-      subEn: 'Certified Dantokpa fabrics · Pay with MTN MoMo & Wave',
-      ctaFr: 'Découvrir',
-      ctaEn: 'Explore',
-      image: IMAGES.waxVlisco,
-      targetCategory: 'fashion' as CategoryId,
+      kickerFr: 'MODE & PRÊT-À-PORTER COTONOU',
+      kickerEn: 'COTONOU CLOTHING & APPAREL',
+      titleFr: 'Vêtements & Coupes Contemporaines',
+      titleEn: 'Everyday Clothing & Tailored Apparel',
+      subFr: 'T-shirts coton peigné, blazers, robes, jeans & mailles livrés en 2h',
+      subEn: 'Combed cotton tees, blazers, dresses, denim & knits delivered in 2h',
+      ctaFr: 'Voir Vêtements',
+      ctaEn: 'Shop Clothing',
+      image: IMAGES.realStoreClothingBanner,
+      targetCategory: 'clothing' as CategoryId,
     },
     {
-      kickerFr: 'LIVRAISON EXPRESS ZÉMIDJAN',
-      kickerEn: 'EXPRESS 2H DELIVERY',
-      titleFr: 'Reçu chez vous en 2h Chrono',
-      titleEn: 'Delivered to Your Door in 2h',
-      subFr: 'Cotonou, Abomey-Calavi & Porto-Novo avec code OTP sécurisé',
-      subEn: 'Cotonou, Abomey-Calavi & Porto-Novo with secure OTP handover',
-      ctaFr: 'Explorer',
-      ctaEn: 'Browse',
-      image: IMAGES.courierBanner,
-      targetCategory: 'all' as CategoryId,
+      kickerFr: 'SOULIERS, BASKETS & BIJOUX',
+      kickerEn: 'SHOES & FINE JEWELRY',
+      titleFr: 'Chaussures Cuir & Joaillerie Or 18K',
+      titleEn: 'Leather Footwear & 18K Gold Jewelry',
+      subFr: 'Baskets urbaines, escarpins, colliers perles & montres squelettes',
+      subEn: 'Street sneakers, heels, pearl strands & automatic skeleton watches',
+      ctaFr: 'Explorer Chaussures',
+      ctaEn: 'Shop Shoes',
+      image: IMAGES.realShoesHightopSneakers,
+      targetCategory: 'shoes' as CategoryId,
     },
   ];
 
   const activeSlide = heroSlides[heroSlide];
 
-  const flashDeals = products.filter((p) => p.isFlashDeal || (p.originalPrice && p.originalPrice > p.price));
+  const randomWeightsRef = useRef<Record<string, number>>({});
+  const getOrderWeight = (id: string) => {
+    if (randomWeightsRef.current[id] === undefined) {
+      randomWeightsRef.current[id] = Math.random();
+    }
+    return randomWeightsRef.current[id];
+  };
 
-  const recommendedProducts = products.filter((p) => {
-    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
-    const q = searchQuery.trim().toLowerCase();
-    const matchesSearch =
-      !q ||
-      p.name.toLowerCase().includes(q) ||
-      p.nameEn.toLowerCase().includes(q) ||
-      p.district.toLowerCase().includes(q) ||
-      p.categoryLabelFr.toLowerCase().includes(q);
-    return matchesCat && matchesSearch;
-  });
+  const flashDeals = useMemo(() => {
+    const seenIds = new Set<string>();
+    const seenImages = new Set<string>();
+    const unique = products.filter((p) => {
+      if (!p.isFlashDeal) return false;
+      if (seenIds.has(p.id) || seenImages.has(p.image)) return false;
+      seenIds.add(p.id);
+      seenImages.add(p.image);
+      return true;
+    });
+    // Spread categories apart so adjacent flash deals look visually distinct
+    const priorityOrder = [
+      'iphone-15-pro-max-256',
+      'pack-tshirts-coton-peigne',
+      'sneakers-montantes-retro-rouge',
+      'pendentif-joaillerie-saphir-rubis',
+      'macbook-pro-16-m2max',
+      'sac-cabas-cuir-camel',
+      'eau-de-parfum-nuit-ambre',
+      'costume-trois-pieces-anthracite',
+      'escarpins-daim-rouge-stiletto',
+      'montre-automatique-squelette-or',
+    ];
+    return [...unique].sort((a, b) => {
+      const idxA = priorityOrder.indexOf(a.id);
+      const idxB = priorityOrder.indexOf(b.id);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.id.localeCompare(b.id);
+    });
+  }, [products]);
+
+  const recommendedProducts = useMemo(() => {
+    const filtered = products.filter((p) => {
+      const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
+      const q = searchQuery.trim().toLowerCase();
+      const vendorName = VENDORS[p.vendorId]?.name.toLowerCase() ?? '';
+      const matchesSearch =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.nameEn.toLowerCase().includes(q) ||
+        p.district.toLowerCase().includes(q) ||
+        p.categoryLabelFr.toLowerCase().includes(q) ||
+        p.categoryLabelEn.toLowerCase().includes(q) ||
+        vendorName.includes(q);
+      return matchesCat && matchesSearch;
+    });
+    return [...filtered].sort((a, b) => getOrderWeight(a.id) - getOrderWeight(b.id));
+  }, [products, selectedCategory, searchQuery]);
+
+  const storeList = useMemo(() => {
+    return [...Object.values(VENDORS)].sort(
+      (a, b) => getOrderWeight(`vendor-${a.id}`) - getOrderWeight(`vendor-${b.id}`)
+    );
+  }, []);
 
   return (
     <div className="space-y-6 pb-8">
@@ -195,8 +260,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={
               lang === 'fr'
-                ? 'Rechercher téléphones, ordinateurs, mode wax...'
-                : 'Search phones, laptops, wax fashion...'
+                ? 'Rechercher iPhone, MacBook, vêtements, chaussures, bijoux...'
+                : 'Search iPhone, MacBook, clothing, shoes, jewelry...'
             }
             className="h-12 w-full rounded-2xl border border-[#EAE6F8] bg-[#F2EFFB] pr-12 pl-11 text-sm text-slate-900 placeholder:text-slate-500 focus:border-[#4F28E8] focus:bg-white focus:outline-none"
           />
@@ -327,7 +392,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-5 gap-2.5 sm:gap-4">
+        <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar sm:grid sm:grid-cols-7 sm:gap-3">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             return (
@@ -335,7 +400,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 key={cat.id}
                 type="button"
                 onClick={() => onSelectCategory(isSelected ? 'all' : cat.id)}
-                className="group flex flex-col items-center text-center cursor-pointer"
+                className="group flex w-20 shrink-0 flex-col items-center text-center cursor-pointer sm:w-auto"
               >
                 <div
                   className={`aspect-square w-full overflow-hidden rounded-2xl border bg-white p-1.5 transition-all ${
@@ -383,80 +448,166 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-3.5 overflow-x-auto pb-1 no-scrollbar sm:grid sm:grid-cols-3 lg:grid-cols-4 sm:overflow-visible">
-          {flashDeals.slice(0, 4).map((product) => {
-            const title = lang === 'fr' ? product.name : product.nameEn;
-            const discountPct =
-              product.originalPrice && product.originalPrice > product.price
-                ? Math.round(
-                    ((product.originalPrice - product.price) / product.originalPrice) * 100
-                  )
-                : 0;
-            const isSaved = wishlist.includes(product.id);
-            return (
-              <article
-                key={`flash-${product.id}`}
-                className="w-56 shrink-0 overflow-hidden rounded-2xl border border-[#EAE8F5] bg-white p-3 transition-all hover:border-[#4F28E8]/35 hover:shadow-sm sm:w-auto"
+        <div className="flash-marquee-viewport relative overflow-hidden py-1 [mask-image:linear-gradient(to_right,transparent,black_2%,black_98%,transparent)]">
+          <div className="animate-flash-marquee flex w-max items-stretch">
+            {[0, 1].map((copyIdx) => (
+              <div
+                key={`flash-track-${copyIdx}`}
+                aria-hidden={copyIdx === 1}
+                className="flex shrink-0 gap-3.5 pr-3.5"
               >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#F5F4FB]">
-                  <button
-                    type="button"
-                    onClick={() => onOpenProduct(product.id)}
-                    className="h-full w-full block cursor-pointer"
-                  >
-                    <ProductImage
-                      src={product.image}
-                      alt={title}
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                  {discountPct > 0 && (
-                    <span className="pointer-events-none absolute top-2 left-2 rounded-lg bg-rose-600 px-2 py-0.5 font-mono text-[10px] font-bold text-white tabular-nums">
-                      -{discountPct}%
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => onToggleWishlist(product.id)}
-                    aria-label="Favori"
-                    className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-600 shadow-xs cursor-pointer"
-                  >
-                    <Heart
-                      className={`h-3.5 w-3.5 ${
-                        isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-600'
-                      }`}
-                    />
-                  </button>
+                {flashDeals.map((product) => {
+                  const title = lang === 'fr' ? product.name : product.nameEn;
+                  const discountPct =
+                    product.originalPrice && product.originalPrice > product.price
+                      ? Math.round(
+                          ((product.originalPrice - product.price) / product.originalPrice) * 100
+                        )
+                      : 0;
+                  const isSaved = wishlist.includes(product.id);
+                  const hiddenProps = copyIdx === 1 ? { tabIndex: -1 as const } : {};
+                  return (
+                    <article
+                      key={`flash-${copyIdx}-${product.id}`}
+                      className="w-56 shrink-0 overflow-hidden rounded-2xl border border-[#EAE8F5] bg-white p-3 transition-all hover:border-[#4F28E8]/35 hover:shadow-sm sm:w-64"
+                    >
+                      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#F5F4FB]">
+                        <button
+                          type="button"
+                          onClick={() => onOpenProduct(product.id)}
+                          {...hiddenProps}
+                          className="h-full w-full block cursor-pointer"
+                        >
+                          <ProductImage
+                            src={product.image}
+                            alt={title}
+                            className="h-full w-full object-cover"
+                          />
+                        </button>
+                        {discountPct > 0 && (
+                          <span className="pointer-events-none absolute top-2 left-2 rounded-lg bg-rose-600 px-2 py-0.5 font-mono text-[10px] font-bold text-white tabular-nums">
+                            -{discountPct}%
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => onToggleWishlist(product.id)}
+                          aria-label="Favori"
+                          {...hiddenProps}
+                          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-600 shadow-xs cursor-pointer"
+                        >
+                          <Heart
+                            className={`h-3.5 w-3.5 ${
+                              isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-600'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => onOpenProduct(product.id)}
+                        {...hiddenProps}
+                        className="mt-2.5 block w-full text-left font-display text-sm font-bold text-slate-900 truncate hover:text-[#4F28E8] cursor-pointer"
+                      >
+                        {title}
+                      </button>
+
+                      <div className="mt-1 flex items-end justify-between gap-2">
+                        <div>
+                          <p className="font-mono text-base font-extrabold text-[#4F28E8] tabular-nums">
+                            {formatFCFA(product.price)}
+                          </p>
+                          {product.originalPrice && (
+                            <p className="font-mono text-[11px] text-slate-400 line-through tabular-nums">
+                              {formatFCFA(product.originalPrice)}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onQuickAdd(product)}
+                          {...hiddenProps}
+                          className="rounded-lg bg-[#F2EFFB] px-2.5 py-1.5 text-[11px] font-bold text-[#4F28E8] hover:bg-[#4F28E8] hover:text-white transition-colors cursor-pointer"
+                        >
+                          + {lang === 'fr' ? 'Panier' : 'Add'}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Row 6.5: Boutiques Partenaires à Découvrir */}
+      <section className="space-y-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
+              {lang === 'fr' ? 'Boutiques Partenaires à Cotonou' : 'Curated Local Stores'}
+            </h2>
+            <p className="text-xs text-slate-500">
+              {lang === 'fr'
+                ? 'Smartphones, ordinateurs, vêtements, chaussures, bijoux & beauté'
+                : 'Phones, laptops, clothing, shoes, jewelry, fragrance & bags'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onOpenVendor(storeList[0].id)}
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#4F28E8] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <span>{lang === 'fr' ? 'Explorer' : 'Browse stores'}</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <div className="flex gap-3.5 overflow-x-auto pb-1 no-scrollbar">
+          {storeList.map((vendor) => {
+            const itemCount = products.filter((p) => p.vendorId === vendor.id).length;
+            return (
+              <button
+                key={vendor.id}
+                type="button"
+                onClick={() => onOpenVendor(vendor.id)}
+                className="group w-60 shrink-0 overflow-hidden rounded-2xl border border-[#EAE8F5] bg-white text-left transition-all hover:border-[#4F28E8]/40 hover:shadow-sm cursor-pointer sm:w-64"
+              >
+                <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#F5F4FB]">
+                  <ProductImage
+                    src={vendor.bannerImage}
+                    alt={vendor.name}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-950/15 to-transparent" />
+                  <span className="absolute right-2.5 bottom-2.5 left-2.5 truncate text-xs font-bold text-white">
+                    {lang === 'fr'
+                      ? vendor.specialtyFr || vendor.district
+                      : vendor.specialtyEn || vendor.district}
+                  </span>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => onOpenProduct(product.id)}
-                  className="mt-2.5 block w-full text-left font-display text-sm font-bold text-slate-900 truncate hover:text-[#4F28E8] cursor-pointer"
-                >
-                  {title}
-                </button>
-
-                <div className="mt-1 flex items-end justify-between gap-2">
-                  <div>
-                    <p className="font-mono text-base font-extrabold text-[#4F28E8] tabular-nums">
-                      {formatFCFA(product.price)}
-                    </p>
-                    {product.originalPrice && (
-                      <p className="font-mono text-[11px] text-slate-400 line-through tabular-nums">
-                        {formatFCFA(product.originalPrice)}
-                      </p>
-                    )}
+                <div className="p-3.5 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-display text-sm font-bold text-slate-900 truncate group-hover:text-[#4F28E8]">
+                      {vendor.name}
+                    </h3>
+                    <Store className="h-3.5 w-3.5 text-[#4F28E8] shrink-0" />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => onQuickAdd(product)}
-                    className="rounded-lg bg-[#F2EFFB] px-2.5 py-1.5 text-[11px] font-bold text-[#4F28E8] hover:bg-[#4F28E8] hover:text-white transition-colors cursor-pointer"
-                  >
-                    + {lang === 'fr' ? 'Panier' : 'Add'}
-                  </button>
+                  <p className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
+                    <span>{vendor.district}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-mono tabular-nums text-emerald-700 font-semibold">
+                      {vendor.satisfaction}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-mono tabular-nums">
+                      {itemCount} {lang === 'fr' ? 'art.' : 'items'}
+                    </span>
+                  </p>
                 </div>
-              </article>
+              </button>
             );
           })}
         </div>

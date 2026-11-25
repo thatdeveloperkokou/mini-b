@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ArrowRight, Search, SlidersHorizontal } from 'lucide-react';
-import { CATEGORIES } from '../data/storeData';
+import { CATEGORIES, VENDORS } from '../data/storeData';
 import { CategoryId, Language, Product } from '../types';
 import { ProductCard } from '../components/ProductCard';
 import { ProductImage } from '../components/ProductImage';
@@ -33,27 +33,41 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
   const [sortBy, setSortBy] = useState<'featured' | 'price_asc' | 'price_desc' | 'rating'>('featured');
   const [under50k, setUnder50k] = useState(false);
 
-  const filtered = products
-    .filter((p) => {
-      if (selectedCategory !== 'all' && p.category !== selectedCategory) return false;
-      if (under50k && p.price > 50000) return false;
-      const q = searchQuery.trim().toLowerCase();
-      if (
-        q &&
-        !p.name.toLowerCase().includes(q) &&
-        !p.nameEn.toLowerCase().includes(q) &&
-        !p.district.toLowerCase().includes(q)
-      ) {
-        return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'price_asc') return a.price - b.price;
-      if (sortBy === 'price_desc') return b.price - a.price;
-      if (sortBy === 'rating') return b.rating - a.rating;
-      return 0;
-    });
+  const randomWeightsRef = useRef<Record<string, number>>({});
+  const getOrderWeight = (id: string) => {
+    if (randomWeightsRef.current[id] === undefined) {
+      randomWeightsRef.current[id] = Math.random();
+    }
+    return randomWeightsRef.current[id];
+  };
+
+  const filtered = useMemo(() => {
+    return products
+      .filter((p) => {
+        if (selectedCategory !== 'all' && p.category !== selectedCategory) return false;
+        if (under50k && p.price > 50000) return false;
+        const q = searchQuery.trim().toLowerCase();
+        const vendorName = VENDORS[p.vendorId]?.name.toLowerCase() ?? '';
+        if (
+          q &&
+          !p.name.toLowerCase().includes(q) &&
+          !p.nameEn.toLowerCase().includes(q) &&
+          !p.district.toLowerCase().includes(q) &&
+          !p.categoryLabelFr.toLowerCase().includes(q) &&
+          !p.categoryLabelEn.toLowerCase().includes(q) &&
+          !vendorName.includes(q)
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'price_asc') return a.price - b.price;
+        if (sortBy === 'price_desc') return b.price - a.price;
+        if (sortBy === 'rating') return b.rating - a.rating;
+        return getOrderWeight(a.id) - getOrderWeight(b.id);
+      });
+  }, [products, selectedCategory, under50k, searchQuery, sortBy]);
 
   return (
     <div className="space-y-8 pb-8">
@@ -82,7 +96,7 @@ export const CategoriesView: React.FC<CategoriesViewProps> = ({
       </div>
 
       {/* Department Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
         {CATEGORIES.map((cat) => {
           const isSelected = selectedCategory === cat.id;
           return (

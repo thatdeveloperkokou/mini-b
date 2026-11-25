@@ -33,3 +33,33 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+@keyframes flash-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-flash-marquee {
+  animation: flash-marquee 58s linear infinite;
+  will-change: transform;
+}
+
+.flash-marquee-viewport:hover .animate-flash-marquee,
+.flash-marquee-viewport:focus-within .animate-flash-marquee {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-flash-marquee {
+    animation: none;
+  }
+
+  .flash-marquee-viewport {
+    overflow-x: auto;
+  }
+}
+
