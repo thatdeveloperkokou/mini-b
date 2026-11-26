@@ -67,6 +67,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 }) => {
   const isOnline = useOnlineStatus();
   const [heroSlide, setHeroSlide] = useState(0);
+  const [isHeroPaused, setIsHeroPaused] = useState(false);
   const [flashSeconds, setFlashSeconds] = useState(2 * 3600 + 45 * 60 + 18);
   const flashDealsSectionRef = useRef<HTMLElement | null>(null);
 
@@ -176,14 +177,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
   }, [heroSlide, heroSlides.length]);
 
   useEffect(() => {
-    if (heroSlides.length <= 1) return;
+    if (heroSlides.length <= 1 || isHeroPaused) return;
     const autoTimer = window.setInterval(() => {
       setHeroSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5500);
+    }, 6500);
     return () => window.clearInterval(autoTimer);
-  }, [heroSlides.length, heroSlide]);
-
-  const activeSlide = heroSlides[heroSlide] || heroSlides[0];
+  }, [heroSlides.length, heroSlide, isHeroPaused]);
 
   const randomWeightsRef = useRef<Record<string, number>>({});
   const getOrderWeight = (id: string) => {
@@ -342,129 +341,156 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </div>
 
       {/* Row 3: Electric Violet-Indigo Hero Promo Carousel (#5C2DF2 -> #421AD6) */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5E30F5] via-[#4F28E8] to-[#3B19C8] p-5 text-white shadow-sm sm:p-8 lg:p-10">
-        {activeSlide.kind === 'promo' ? (
-          <div className="grid grid-cols-12 items-center gap-4 sm:gap-8">
-            <div className="col-span-7 sm:col-span-7 space-y-2.5 sm:space-y-4">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wide text-white">
-                <Zap className="h-3 w-3 shrink-0" />
-                <span>{lang === 'fr' ? activeSlide.kickerFr : activeSlide.kickerEn}</span>
-              </div>
-
-              <h1 className="font-display text-xl font-extrabold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl">
-                {lang === 'fr' ? activeSlide.titleFr : activeSlide.titleEn}
-              </h1>
-
-              <p className="max-w-md text-xs leading-relaxed text-indigo-100 sm:text-sm line-clamp-2">
-                {lang === 'fr' ? activeSlide.subFr : activeSlide.subEn}
-              </p>
-
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={activeSlide.onAction}
-                  className="inline-flex min-h-[40px] sm:min-h-[44px] items-center gap-2 rounded-full bg-white px-4 sm:px-6 py-2 text-xs sm:text-sm font-bold text-[#4F28E8] transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                >
-                  <span>{lang === 'fr' ? activeSlide.ctaFr : activeSlide.ctaEn}</span>
-                  <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="col-span-5 sm:col-span-5">
-              <button
-                type="button"
-                onClick={activeSlide.onAction}
-                className="relative block w-full aspect-[4/3] overflow-hidden rounded-2xl bg-slate-950/25 shadow-lg ring-1 ring-white/15 cursor-pointer"
+      <section
+        onMouseEnter={() => setIsHeroPaused(true)}
+        onMouseLeave={() => setIsHeroPaused(false)}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5E30F5] via-[#4F28E8] to-[#3B19C8] p-5 text-white shadow-sm sm:p-8 lg:p-10"
+      >
+        <div className="grid">
+          {heroSlides.map((slide, idx) => {
+            const isActive = idx === heroSlide;
+            const inactiveTabProps = isActive ? {} : { tabIndex: -1 as const };
+            return (
+              <div
+                key={slide.id}
+                aria-hidden={!isActive}
+                className={`col-start-1 row-start-1 transition-all duration-1000 ease-in motion-reduce:transition-none ${
+                  isActive
+                    ? 'z-10 opacity-100 translate-x-0 scale-100 pointer-events-auto'
+                    : 'z-0 opacity-0 translate-x-4 scale-[0.985] pointer-events-none'
+                }`}
               >
-                <ProductImage
-                  src={activeSlide.image}
-                  alt={lang === 'fr' ? activeSlide.titleFr : activeSlide.titleEn}
-                  className="h-full w-full object-cover"
-                />
-                {activeSlide.badgeFr && (
-                  <span className="absolute top-2.5 left-2.5 rounded-lg bg-amber-400 px-2.5 py-1 font-mono text-[10px] sm:text-xs font-extrabold text-slate-950 shadow-xs">
-                    {lang === 'fr' ? activeSlide.badgeFr : activeSlide.badgeEn}
-                  </span>
+                {slide.kind === 'promo' ? (
+                  <div className="grid grid-cols-12 items-center gap-4 sm:gap-8">
+                    <div className="col-span-7 sm:col-span-7 space-y-2.5 sm:space-y-4">
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wide text-white">
+                        <Zap className="h-3 w-3 shrink-0" />
+                        <span>{lang === 'fr' ? slide.kickerFr : slide.kickerEn}</span>
+                      </div>
+
+                      <h1 className="font-display text-xl font-extrabold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl">
+                        {lang === 'fr' ? slide.titleFr : slide.titleEn}
+                      </h1>
+
+                      <p className="max-w-md text-xs leading-relaxed text-indigo-100 sm:text-sm line-clamp-2">
+                        {lang === 'fr' ? slide.subFr : slide.subEn}
+                      </p>
+
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={slide.onAction}
+                          {...inactiveTabProps}
+                          className="inline-flex min-h-[40px] sm:min-h-[44px] items-center gap-2 rounded-full bg-white px-4 sm:px-6 py-2 text-xs sm:text-sm font-bold text-[#4F28E8] transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                        >
+                          <span>{lang === 'fr' ? slide.ctaFr : slide.ctaEn}</span>
+                          <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="col-span-5 sm:col-span-5">
+                      <button
+                        type="button"
+                        onClick={slide.onAction}
+                        {...inactiveTabProps}
+                        className="relative block w-full aspect-[4/3] overflow-hidden rounded-2xl bg-slate-950/25 shadow-lg ring-1 ring-white/15 cursor-pointer"
+                      >
+                        <ProductImage
+                          src={slide.image}
+                          alt={lang === 'fr' ? slide.titleFr : slide.titleEn}
+                          className="h-full w-full object-cover"
+                        />
+                        {slide.badgeFr && (
+                          <span className="absolute top-2.5 left-2.5 rounded-lg bg-amber-400 px-2.5 py-1 font-mono text-[10px] sm:text-xs font-extrabold text-slate-950 shadow-xs">
+                            {lang === 'fr' ? slide.badgeFr : slide.badgeEn}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-12 items-center gap-4 sm:gap-8">
+                    <div className="col-span-7 sm:col-span-7 space-y-2.5 sm:space-y-4">
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wide text-white">
+                        <Tag className="h-3 w-3 shrink-0" />
+                        <span>
+                          {lang === 'fr'
+                            ? `NOS PRODUITS · ${slide.product.categoryLabelFr.toUpperCase()}`
+                            : `FEATURED ITEM · ${slide.product.categoryLabelEn.toUpperCase()}`}
+                        </span>
+                      </div>
+
+                      <h1 className="font-display text-lg font-extrabold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl line-clamp-2">
+                        {lang === 'fr' ? slide.product.name : slide.product.nameEn}
+                      </h1>
+
+                      <div className="flex flex-wrap items-baseline gap-2.5">
+                        <span className="font-mono text-lg sm:text-2xl font-extrabold text-white tabular-nums">
+                          {formatFCFA(slide.product.price)}
+                        </span>
+                        {slide.product.originalPrice && (
+                          <span className="font-mono text-xs sm:text-sm text-indigo-200 line-through tabular-nums">
+                            {formatFCFA(slide.product.originalPrice)}
+                          </span>
+                        )}
+                        <span className="hidden sm:inline text-xs font-medium text-indigo-100">
+                          ·{' '}
+                          {lang === 'fr'
+                            ? slide.product.deliveryEtaFr
+                            : slide.product.deliveryEtaEn}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => onOpenProduct(slide.product.id)}
+                          {...inactiveTabProps}
+                          className="inline-flex min-h-[40px] sm:min-h-[44px] items-center gap-2 rounded-full bg-white px-4 sm:px-6 py-2 text-xs sm:text-sm font-bold text-[#4F28E8] transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                        >
+                          <span>{lang === 'fr' ? 'Voir le produit' : 'View Product'}</span>
+                          <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onQuickAdd(slide.product)}
+                          {...inactiveTabProps}
+                          className="hidden sm:inline-flex min-h-[44px] items-center rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-white/20 cursor-pointer"
+                        >
+                          + {lang === 'fr' ? 'Panier' : 'Add to Cart'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="col-span-5 sm:col-span-5">
+                      <button
+                        type="button"
+                        onClick={() => onOpenProduct(slide.product.id)}
+                        {...inactiveTabProps}
+                        className="relative block w-full aspect-[4/3] overflow-hidden rounded-2xl bg-slate-950/25 shadow-lg ring-1 ring-white/15 cursor-pointer"
+                      >
+                        <ProductImage
+                          src={slide.product.image}
+                          alt={lang === 'fr' ? slide.product.name : slide.product.nameEn}
+                          className="h-full w-full object-cover"
+                        />
+                        {slide.product.highlightTag && (
+                          <span className="absolute top-2.5 left-2.5 rounded-lg bg-white/95 px-2.5 py-1 font-mono text-[10px] sm:text-xs font-extrabold text-[#4F28E8] shadow-xs">
+                            {slide.product.highlightTag}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 )}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-12 items-center gap-4 sm:gap-8">
-            <div className="col-span-7 sm:col-span-7 space-y-2.5 sm:space-y-4">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wide text-white">
-                <Tag className="h-3 w-3 shrink-0" />
-                <span>
-                  {lang === 'fr'
-                    ? `NOS PRODUITS · ${activeSlide.product.categoryLabelFr.toUpperCase()}`
-                    : `FEATURED ITEM · ${activeSlide.product.categoryLabelEn.toUpperCase()}`}
-                </span>
               </div>
-
-              <h1 className="font-display text-lg font-extrabold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl line-clamp-2">
-                {lang === 'fr' ? activeSlide.product.name : activeSlide.product.nameEn}
-              </h1>
-
-              <div className="flex flex-wrap items-baseline gap-2.5">
-                <span className="font-mono text-lg sm:text-2xl font-extrabold text-white tabular-nums">
-                  {formatFCFA(activeSlide.product.price)}
-                </span>
-                {activeSlide.product.originalPrice && (
-                  <span className="font-mono text-xs sm:text-sm text-indigo-200 line-through tabular-nums">
-                    {formatFCFA(activeSlide.product.originalPrice)}
-                  </span>
-                )}
-                <span className="hidden sm:inline text-xs font-medium text-indigo-100">
-                  ·{' '}
-                  {lang === 'fr'
-                    ? activeSlide.product.deliveryEtaFr
-                    : activeSlide.product.deliveryEtaEn}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => onOpenProduct(activeSlide.product.id)}
-                  className="inline-flex min-h-[40px] sm:min-h-[44px] items-center gap-2 rounded-full bg-white px-4 sm:px-6 py-2 text-xs sm:text-sm font-bold text-[#4F28E8] transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                >
-                  <span>{lang === 'fr' ? 'Voir le produit' : 'View Product'}</span>
-                  <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onQuickAdd(activeSlide.product)}
-                  className="hidden sm:inline-flex min-h-[44px] items-center rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-white/20 cursor-pointer"
-                >
-                  + {lang === 'fr' ? 'Panier' : 'Add to Cart'}
-                </button>
-              </div>
-            </div>
-
-            <div className="col-span-5 sm:col-span-5">
-              <button
-                type="button"
-                onClick={() => onOpenProduct(activeSlide.product.id)}
-                className="relative block w-full aspect-[4/3] overflow-hidden rounded-2xl bg-slate-950/25 shadow-lg ring-1 ring-white/15 cursor-pointer"
-              >
-                <ProductImage
-                  src={activeSlide.product.image}
-                  alt={lang === 'fr' ? activeSlide.product.name : activeSlide.product.nameEn}
-                  className="h-full w-full object-cover"
-                />
-                {activeSlide.product.highlightTag && (
-                  <span className="absolute top-2.5 left-2.5 rounded-lg bg-white/95 px-2.5 py-1 font-mono text-[10px] sm:text-xs font-extrabold text-[#4F28E8] shadow-xs">
-                    {activeSlide.product.highlightTag}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </div>
 
         {/* Carousel Navigation & Dots */}
-        <div className="mt-5 flex items-center justify-center gap-3">
+        <div className="relative z-20 mt-5 flex items-center justify-center gap-3">
           <button
             type="button"
             aria-label={lang === 'fr' ? 'Slide précédent' : 'Previous slide'}
@@ -491,7 +517,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     : slide.product.nameEn
                 }
                 onClick={() => setHeroSlide(idx)}
-                className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                className={`h-1.5 rounded-full transition-all duration-700 ease-in cursor-pointer ${
                   heroSlide === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/45 hover:bg-white/75'
                 }`}
               />

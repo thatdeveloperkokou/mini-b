@@ -296,6 +296,10 @@ export default function App() {
       />
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-20 sm:px-6 md:pb-12 lg:px-8">
+        <div
+          key={`${currentView}-${currentView === 'product' ? activeProductId : currentView === 'vendor' ? activeVendorId : ''}`}
+          className="animate-page-enter"
+        >
         {currentView === 'home' && (
           <HomeView
             lang={lang}
@@ -473,6 +477,7 @@ export default function App() {
             onOpenWishlist={() => navigate('wishlist')}
           />
         )}
+        </div>
       </main>
 
       {/* Clean Quiet Footer */}
